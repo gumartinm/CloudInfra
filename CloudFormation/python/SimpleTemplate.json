@@ -33,7 +33,7 @@
             "Description": "GUS Network Interface",
             "DeviceIndex": 0,
             "SubnetId": {
-              "Ref": "subnet-gus"
+              "Ref": "subnetgus"
             },
             "PrivateIpAddresses": [
               {
@@ -43,7 +43,7 @@
             ],
             "GroupSet": [
               {
-                "Ref": "security-group-gus"
+                "Ref": "securitygroupgus"
               }
             ],
             "AssociatePublicIpAddress": "true"
@@ -51,7 +51,7 @@
         ]
       }
     },
-    "vpc-gus": {
+    "vpcgus": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
         "CidrBlock": "192.168.96.0/22",
@@ -66,13 +66,13 @@
         ]
       }
     },
-    "subnet-gus": {
+    "subnetgus": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "CidrBlock": "192.168.97.0/26",
         "AvailabilityZone": "eu-west-1a",
         "VpcId": {
-          "Ref": "vpc-gus"
+          "Ref": "vpcgus"
         },
         "Tags": [
           {
@@ -82,12 +82,12 @@
         ]
       }
     },
-    "security-group-gus": {
+    "securitygroupgus": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
         "GroupDescription": "default VPC security group",
         "VpcId": {
-          "Ref": "vpc-gus"
+          "Ref": "vpcgus"
         },
         "Tags": [
           {
@@ -101,7 +101,7 @@
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties": {
         "GroupId": {
-          "Ref": "security-group-gus"
+          "Ref": "securitygroupgus"
         },
         "IpProtocol": "tcp",
         "FromPort": "22",
