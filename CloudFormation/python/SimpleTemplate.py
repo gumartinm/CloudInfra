@@ -30,7 +30,7 @@ keyname = t.add_parameter(
 
 vpc = t.add_resource(
         ec2.VPC(
-            'vpcgus',
+            'VPCGus',
             CidrBlock='192.168.96.0/22',
             InstanceTenancy='default',
             EnableDnsSupport=True,
@@ -42,7 +42,7 @@ vpc = t.add_resource(
 
 subnet = t.add_resource(
             ec2.Subnet(
-                'subnetgus',
+                'SubnetGus',
                 CidrBlock='192.168.97.0/26',
                 AvailabilityZone='eu-west-1a',
                 VpcId=Ref(vpc),
@@ -71,10 +71,10 @@ queue = t.add_resource(
 
 topic = t.add_resource(
         sns.Topic(
-            'gussnstopic',
+            'GusSNSTopic',
             # Required when using SMS
-            DisplayName='gussnstopic',
-            TopicName='gussnstopic',
+            DisplayName='GusSNSTopic',
+            TopicName='GusSNSTopic',
             Subscription=[
                 sns.Subscription(
                     Endpoint=GetAtt(queue, "Arn"),
@@ -160,7 +160,7 @@ t.add_resource(
 
 security_group = t.add_resource(
                     ec2.SecurityGroup(
-                        'securitygroupgus',
+                        'SecurityGroupGus',
                         GroupDescription='default VPC security group',
                         VpcId=Ref(vpc),
                         Tags=Tags(Name='SecurityGroup GUS')
@@ -170,7 +170,7 @@ security_group = t.add_resource(
 
 t.add_resource(
     ec2.SecurityGroupIngress(
-        'ingressSSH',
+        'IngressSSH',
         GroupId=Ref(security_group),
         IpProtocol='tcp',
         FromPort='22',
