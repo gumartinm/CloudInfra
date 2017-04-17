@@ -42,7 +42,7 @@ t.add_resource(
         'subnetgus',
         CidrBlock='192.168.97.0/26',
         AvailabilityZone='eu-west-1a',
-        VpcId='vpcgus',
+        VpcId=Ref('vpcgus'),
         Tags=Tags(Name='PublicGUS')
     )
 )
@@ -119,7 +119,9 @@ network_interfaces = [
                 PrivateIpAddress='192.168.97.30'
             )
         ],
-        GroupSet=Ref('securitygroupgus'),
+        GroupSet=[
+            Ref('securitygroupgus')
+        ],
         AssociatePublicIpAddress=True
     )
 ]
