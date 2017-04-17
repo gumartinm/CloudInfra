@@ -7,7 +7,7 @@
 # Debug: python -m pdb SimpleTemplate.py
 #
 
-from troposphere import Parameter, Template, Ref, Tags, Output, GetAtt
+from troposphere import Parameter, Template, Ref, Tags, Output, GetAtt, Export
 import troposphere.ec2 as ec2
 import troposphere.sqs as sqs
 import troposphere.sns as sns
@@ -214,17 +214,20 @@ t.add_output([
     Output(
         "QueueURL",
         Description="URL of SQS Queue",
-        Value=Ref(queue)
+        Value=Ref(queue),
+        Export=Export('QueueGusURL')
     ),
     Output(
         "QueueARN",
         Description="ARN of SQS Queue",
-        Value=GetAtt(queue, "Arn")
+        Value=GetAtt(queue, "Arn"),
+        Export=Export('QueueGusArn')
     ),
     Output(
         "QueueName",
         Description="Name of SQS Queue",
-        Value=GetAtt(queue, "QueueName")
+        Value=GetAtt(queue, "QueueName"),
+        Export=Export('QueueGusName')
     )
 ])
 
