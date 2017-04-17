@@ -13,39 +13,43 @@ import troposphere.sqs as sqs
 import troposphere.sns as sns
 
 t = Template(Description='Simple template example with one instance')
+t.AWSTemplateFormatVersion = '2010-09-09'
 
 
-t.add_parameter(
-    Parameter(
-        'KeyName',
-        Type='AWS::EC2::KeyPair::KeyName',
-        ConstraintDescription='must be the name of an existing EC2 KeyPair.',
-        Description=('Name of an existing EC2 KeyPair to enable SSH '
-                     'access to the instance')
+keyname = t.add_parameter(
+            Parameter(
+                'KeyName',
+                Type='AWS::EC2::KeyPair::KeyName',
+                ConstraintDescription=('must be the name of an existing EC2 '
+                                       'KeyPair.'),
+                Description=('Name of an existing EC2 KeyPair to enable SSH '
+                             'access to the instance')
+            )
+        )
+
+
+vpc = t.add_resource(
+        ec2.VPC(
+            'vpcgus',
+            CidrBlock='192.168.96.0/22',
+            InstanceTenancy='default',
+            EnableDnsSupport=True,
+            EnableDnsHostnames=True,
+            Tags=Tags(Name='VPC GUS')
+        )
     )
-)
 
 
-t.add_resource(
-    ec2.VPC(
-        'vpcgus',
-        CidrBlock='192.168.96.0/22',
-        InstanceTenancy='default',
-        EnableDnsSupport=True,
-        EnableDnsHostnames=True,
-        Tags=Tags(Name='VPC GUS')
-    )
-)
+subnet = t.add_resource(
+            ec2.Subnet(
+                'subnetgus',
+                CidrBlock='192.168.97.0/26',
+                AvailabilityZone='eu-west-1a',
+                VpcId=Ref(vpc),
+                Tags=Tags(Name='PublicGUS')
+            )
+        )
 
-t.add_resource(
-    ec2.Subnet(
-        'subnetgus',
-        CidrBlock='192.168.97.0/26',
-        AvailabilityZone='eu-west-1a',
-        VpcId=Ref('vpcgus'),
-        Tags=Tags(Name='PublicGUS')
-    )
-)
 
 queue = t.add_resource(
             sqs.Queue(
@@ -64,32 +68,110 @@ queue = t.add_resource(
             )
         )
 
+
+topic = t.add_resource(
+        sns.Topic(
+            'gussnstopic',
+            # Required when using SMS
+            DisplayName='gussnstopic',
+            TopicName='gussnstopic',
+            Subscription=[
+                sns.Subscription(
+                    Endpoint=GetAtt(queue, "Arn"),
+                    Protocol='sqs'
+                )
+            ]
+        )
+    )
+
+
 t.add_resource(
-    sns.Topic(
-        'gussnstopic',
-        Subscription=[
-            sns.Subscription(
-                # How to reference created QueueGus?
-                Endpoint='QueueGus',
-                Protocol='sqs')
-            ],
-        DependsOn='QueueGus'
+    sns.TopicPolicy(
+        'TopicPolicyGus',
+        Topics=[Ref(topic)],
+        PolicyDocument={
+            "Version": "2008-10-17",
+            "Id": "TopicPolicyGusPolicyDocumentId",
+            "Statement": [
+                {
+                    "Sid": "Allow-OnlyOwner-SubscriptAndPublic-To-Topic",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": "*"
+                    },
+                    "Action": [
+                        "SNS:GetTopicAttributes",
+                        "SNS:SetTopicAttributes",
+                        "SNS:AddPermission",
+                        "SNS:RemovePermission",
+                        "SNS:DeleteTopic",
+                        "SNS:Subscribe",
+                        "SNS:ListSubscriptionsByTopic",
+                        "SNS:Publish",
+                        "SNS:Receive"
+                    ],
+                    "Resource": Ref(topic),
+                    "Condition": {
+                        "StringEquals": {
+                            "AWS:SourceOwner": "ACCOUNT-ID"
+                        }
+                    }
+                }
+            ]
+        }
     )
 )
 
+
 t.add_resource(
-    ec2.SecurityGroup(
-        'securitygroupgus',
-        GroupDescription='default VPC security group',
-        VpcId=Ref('vpcgus'),
-        Tags=Tags(Name='SecurityGroup GUS')
+    sqs.QueuePolicy(
+        'QueuePolicyGus',
+        Queues=[Ref(queue)],
+        PolicyDocument={
+            "Version": "2012-10-17",
+            "Id": "QueuePolicyGusPolicyDocumentId",
+            "Statement": [
+                {
+                    "Sid": "Allow-SendMessage-FromTopic",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": "*"
+                    },
+                    "Action": "SQS:SendMessage",
+                    "Resource": GetAtt(queue, "Arn"),
+                    "Condition": {
+                        "ArnEquals": {
+                            "aws:SourceArn": Ref(topic)
+                        }
+                    }
+                },
+                {
+                    "Sid": "Allow-Everything-FromEverywhere",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "SQS:*",
+                    "Resource": GetAtt(queue, "Arn")
+                }
+            ]
+        }
     )
 )
+
+
+security_group = t.add_resource(
+                    ec2.SecurityGroup(
+                        'securitygroupgus',
+                        GroupDescription='default VPC security group',
+                        VpcId=Ref(vpc),
+                        Tags=Tags(Name='SecurityGroup GUS')
+                    )
+                )
+
 
 t.add_resource(
     ec2.SecurityGroupIngress(
         'ingressSSH',
-        GroupId=Ref('securitygroupgus'),
+        GroupId=Ref(security_group),
         IpProtocol='tcp',
         FromPort='22',
         ToPort='22',
@@ -97,22 +179,22 @@ t.add_resource(
     )
 )
 
+
 instance = ec2.Instance('SimpleServerInstance')
 instance.DisableApiTermination = False
 instance.InstanceInitiatedShutdownBehavior = 'stop'
 instance.ImageId = 'ami-ae0937c8'
 instance.InstanceType = 'm3.large'
 instance.KernelId = 'aki-dc9ed9af'
-instance.KeyName = Ref('KeyName')
+instance.KeyName = Ref(keyname)
 instance.Monitoring = False
 instance.Tags = Tags(Name='instanceGUS')
-
-network_interfaces = [
+instance.NetworkInterfaces = [
     ec2.NetworkInterfaceProperty(
         DeleteOnTermination=True,
         Description='GUS Network Interface',
         DeviceIndex='0',
-        SubnetId=Ref('subnetgus'),
+        SubnetId=Ref(subnet),
         PrivateIpAddresses=[
             ec2.PrivateIpAddressSpecification(
                 Primary=True,
@@ -120,13 +202,11 @@ network_interfaces = [
             )
         ],
         GroupSet=[
-            Ref('securitygroupgus')
+            Ref(security_group)
         ],
         AssociatePublicIpAddress=True
     )
 ]
-instance.NetworkInterfaces = network_interfaces
-
 t.add_resource(instance)
 
 
