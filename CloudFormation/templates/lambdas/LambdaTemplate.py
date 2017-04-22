@@ -7,12 +7,10 @@
 # Debug: python -m pdb SimpleTemplate.py
 #
 
-from troposphere import Parameter, Template, Ref, Tags, Output, GetAtt, Export
-from troposphere.awslambda import Function, Code, Environment
+from troposphere import Parameter, Template, Ref, Tags, GetAtt
+from troposphere.awslambda import Function, Code, Environment, VPCConfig
 import troposphere.iam as iam
 import troposphere.ec2 as ec2
-import troposphere.sqs as sqs
-import troposphere.sns as sns
 
 t = Template(Description='Simple template example with lambdas')
 t.AWSTemplateFormatVersion = '2010-09-09'
@@ -102,7 +100,7 @@ role = t.add_resource(
 )
 
 
-foobar_function = t.add_resource(
+lambda_function = t.add_resource(
     Function(
         "GusLambdaFunction",
         Description='aws-lambda-gus-example',
@@ -120,29 +118,16 @@ foobar_function = t.add_resource(
         Timeout=15,
         Handler='de.aws.example.lambda.AWSLambdaExample',
         Role=GetAtt('GusLambdaRole', 'Arn'),
-        Runtime='Java 8',
-    )
-)
-
-
-security_group = t.add_resource(
-                    ec2.SecurityGroup(
-                        'SecurityGroupGus',
-                        GroupDescription='default VPC security group',
-                        VpcId=Ref(vpc),
-                        Tags=Tags(Name='SecurityGroup GUS')
-                    )
-                )
-
-
-t.add_resource(
-    ec2.SecurityGroupIngress(
-        'IngressSSH',
-        GroupId=Ref(security_group),
-        IpProtocol='tcp',
-        FromPort='22',
-        ToPort='22',
-        CidrIp='YOUR.IP.V4.ADDRES/32'
+        Runtime='java8',
+        VpcConfig=VPCConfig(
+            SecurityGroupIds=[
+                'sg-XXXXXX'
+            ],
+            SubnetIds=[
+                'subnet-XXXXXXXX',
+                'subnet-YYYYYYYY'
+            ]
+        )
     )
 )
 
