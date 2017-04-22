@@ -9,8 +9,10 @@
 
 from troposphere import Parameter, Template, Ref, Tags, GetAtt
 from troposphere.awslambda import Function, Code, Environment, VPCConfig
+from troposphere.awslambda import DeadLetterConfig, Version, Alias
 import troposphere.iam as iam
 import troposphere.ec2 as ec2
+import troposphere.sqs as sqs
 
 t = Template(Description='Simple template example with lambdas')
 t.AWSTemplateFormatVersion = '2010-09-09'
@@ -46,6 +48,23 @@ subnet = t.add_resource(
                 AvailabilityZone='eu-west-1a',
                 VpcId=Ref(vpc),
                 Tags=Tags(Name='PublicGUS')
+            )
+        )
+
+queue = t.add_resource(
+            sqs.Queue(
+                'DLQLambdaQueue',
+                QueueName='DLQLambdaQueue',
+                DelaySeconds=0,
+                # Long polling. See: http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-long-polling.html#sqs-long-polling-console
+                # 20 seconds
+                ReceiveMessageWaitTimeSeconds=20,
+                # 256KiB (bytes)
+                MaximumMessageSize=262144,
+                # 30 seconds
+                VisibilityTimeout=30,
+                # 14 days (seconds)
+                MessageRetentionPeriod=1209600
             )
         )
 
@@ -120,6 +139,9 @@ lambda_function = t.add_resource(
         Handler='de.aws.example.lambda.AWSLambdaExample',
         Role=GetAtt('GusLambdaRole', 'Arn'),
         Runtime='java8',
+        DeadLetterConfig=DeadLetterConfig(
+            TargetArn=GetAtt(queue, "Arn")
+        ),
         VpcConfig=VPCConfig(
             SecurityGroupIds=[
                 'sg-XXXXXX'
@@ -131,6 +153,26 @@ lambda_function = t.add_resource(
         )
     )
 )
+
+#  t.add_resource(
+#      Version(
+#          'LambdaVersion',
+#          Description='Lambda Version 1',
+#          FunctionName=Ref(lambda_function),
+#          DependsOn='GusLambdaFunction'
+#      )
+#  )
+#
+#  t.add_resource(
+#      Alias(
+#          'LambdaAlias',
+#          Name='LambdaAlias',
+#          Description='Lambda Alias 1',
+#          FunctionName=Ref(lambda_function),
+#          FunctionVersion='1',
+#          DependsOn='GusLambdaFunction'
+#      )
+#  )
 
 
 print(t.to_json())
