@@ -73,6 +73,7 @@ role = t.add_resource(
             'arn:aws:iam::aws:policy/AmazonSQSFullAccess',
             'arn:aws:iam::aws:policy/AWSLambdaFullAccess',
             'arn:aws:iam::aws:policy/AWSLambdaExecute',
+            'arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess',
             ('arn:aws:iam::aws:policy/service-role/'
              'AWSLambdaVPCAccessExecutionRole'),
         ],
