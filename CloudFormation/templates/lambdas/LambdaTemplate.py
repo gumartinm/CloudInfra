@@ -154,25 +154,40 @@ lambda_function = t.add_resource(
     )
 )
 
-#  t.add_resource(
-#      Version(
-#          'LambdaVersion',
-#          Description='Lambda Version 1',
-#          FunctionName=Ref(lambda_function),
-#          DependsOn='GusLambdaFunction'
-#      )
-#  )
-#
-#  t.add_resource(
-#      Alias(
-#          'LambdaAlias',
-#          Name='LambdaAlias',
-#          Description='Lambda Alias 1',
-#          FunctionName=Ref(lambda_function),
-#          FunctionVersion='1',
-#          DependsOn='GusLambdaFunction'
-#      )
-#  )
+# It will create the aws-lambda-gus-example version 1
+# We can not choose the version numbers. They are automaticaly created
+# by Amazon.
+# Lambda version: 1 (the number is given by Amazon)
+t.add_resource(
+    Version(
+        'LambdaVersion1',
+        Description='Lambda Version 1',
+        FunctionName=Ref(lambda_function)
+    )
+)
+
+
+# First change set (adding new values to our cloudformation)
+# New lambda version: 2
+t.add_resource(
+    Version(
+        'LambdaVersion2',
+        Description='Lambda Version 2',
+        FunctionName=Ref(lambda_function)
+    )
+)
+# Modificate template in order to create alias for version 1.
+t.add_resource(
+    Alias(
+        'LambdaAlias',
+        Name=Ref(lambda_function),
+        Description='Lambda Alias 1',
+        FunctionName=Ref(lambda_function),
+        # Amazon will give the version 1 to the first created LambdaVersion1.
+        # So, we know what number to choose here :)
+        FunctionVersion='1'
+    )
+)
 
 
 print(t.to_json())
