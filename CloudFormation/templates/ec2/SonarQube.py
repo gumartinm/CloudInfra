@@ -9,6 +9,7 @@
 
 from troposphere import Parameter, Template, Ref, Tags, Select, GetAZs, Join
 from troposphere import cloudformation
+from troposphere.rds import DBInstance, DBParameterGroup
 import troposphere.ec2 as ec2
 
 SONARQUBE_PATH = '/opt/sonarqube/sonarqube.zip'
@@ -28,7 +29,6 @@ keyname = t.add_parameter(
                              'access to the instance')
             )
         )
-
 your_ip_address = t.add_parameter(
             Parameter(
                 'YourIpAddress',
@@ -41,7 +41,6 @@ your_ip_address = t.add_parameter(
                 Description=('your IPv4 address')
             )
         )
-
 sonarqube_download_url = t.add_parameter(
             Parameter(
                 'SonarQubeDownloadURL',
@@ -49,6 +48,90 @@ sonarqube_download_url = t.add_parameter(
                 Default='https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-6.7.1.zip',
                 ConstraintDescription=('SonarQube download URL'),
                 Description=('SonarQube download URL')
+            )
+        )
+db_user = t.add_parameter(
+            Parameter(
+                'DBUser',
+                NoEcho=True,
+                Type='String',
+                MinLength=1,
+                MaxLength=16,
+                AllowedPattern='[a-zA-Z][a-zA-Z0-9]*',
+                ConstraintDescription=('Must begin with a letter and contain only alphanumeric characters.'),
+                Description=('The database admin account username')
+            )
+        )
+db_password = t.add_parameter(
+            Parameter(
+                'DBPassword',
+                NoEcho=True,
+                Type='String',
+                MinLength=8,
+                MaxLength=41,
+                AllowedPattern='[a-zA-Z0-9]*',
+                ConstraintDescription=('Must contain only alphanumeric characters.'),
+                Description=('The database admin account password')
+            )
+        )
+
+
+db_backup_retention = t.add_parameter(
+            Parameter(
+                'DBBackupRetention',
+                Default='31',
+                Type='Number',
+                MinValue=31,
+                MaxValue=365,
+                ConstraintDescription=('Days between 31 and 365.'),
+                Description=('Days backups will be stored.')
+            )
+        )
+
+db_storage_size = t.add_parameter(
+            Parameter(
+                'DBStorageSize',
+                Default='10',
+                Type='Number',
+                MinValue=10,
+                MaxValue=30,
+                ConstraintDescription=('Value between 10Gb and 30Gb'),
+                Description=('Database size in Gb')
+            )
+        )
+
+
+
+# See: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.html#Appendix.PostgreSQL.CommonDBATasks.Parameters
+db_parameters = t.add_resource(
+                    DBParameterGroup(
+                        'DBParamGroup',
+                         Family='postgres9.6',
+                         Description='Database Parameter Group',
+                         Parameters={
+                            'application_name': 'SonarQube'
+                         }
+                    )
+            )
+
+# See: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html
+database = t.add_resource(
+            DBInstance(
+                'SonarQubeDatabase',
+                DBName='SonarQubeDatabase',
+                Engine='postgres',
+                EngineVersion='9.6',
+                StorageType='gp2',
+                MasterUsername=Ref(db_user),
+                MasterUserPassword=Ref(db_password),
+                AllocatedStorage=Ref(db_storage_size),
+                DBInstanceClass='db.m3.xlarge',
+                PreferredBackupWindow='02:00-04:00',
+                PreferredMaintenanceWindow='Mon:04:00-Mon:08:00',
+                BackupRetentionPeriod=Ref(db_backup_retention),
+                AutoMinorVersionUpgrade=True,
+                PubliclyAccessible=False,
+                DBParameterGroupName=Ref(db_parameters)
             )
         )
 
@@ -63,6 +146,7 @@ vpc = t.add_resource(
             Tags=Tags(Name='VPC GUS')
         )
     )
+
 
 availability_zones = GetAZs(Ref('AWS::Region'))
 availability_zone = Select('0', availability_zones)
