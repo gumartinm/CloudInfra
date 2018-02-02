@@ -7,7 +7,8 @@
 # Debug: python -m pdb SonarQube.py
 #
 
-from troposphere import Parameter, Template, Ref, Tags, Select, GetAZs, Join
+from troposphere import Parameter, Template, Ref, Tags, Select, GetAZs, Join, Output, GetAtt, Base64
+from troposphere.iam import InstanceProfile, Role
 from troposphere import cloudformation
 from troposphere.rds import DBInstance, DBParameterGroup
 import troposphere.ec2 as ec2
@@ -74,6 +75,19 @@ db_password = t.add_parameter(
                 Description=('The database admin account password')
             )
         )
+db_name = t.add_parameter(
+        Parameter(
+             'DBName',
+             Default='sonarqube',
+             Description='The database name',
+             Type='String',
+             MinLength=1,
+             MaxLength=64,
+             AllowedPattern='[a-zA-Z][a-zA-Z0-9]*',
+             ConstraintDescription=('must begin with a letter and contain only'
+                                    ' alphanumeric characters.')
+        )
+    )
 
 
 db_backup_retention = t.add_parameter(
@@ -114,11 +128,18 @@ db_parameters = t.add_resource(
                     )
             )
 
+sonarqube_instance_profile = InstanceProfile(
+                                "SonarqubeInstanceProfile",
+                                Path='/',
+                                Roles=['AdminEC2']
+                            )
+t.add_resource(sonarqube_instance_profile)
+
 # See: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html
 database = t.add_resource(
             DBInstance(
                 'SonarQubeDatabase',
-                DBName='SonarQubeDatabase',
+                DBName=Ref(db_name),
                 Engine='postgres',
                 EngineVersion='9.6',
                 StorageType='gp2',
@@ -134,6 +155,18 @@ database = t.add_resource(
                 DBParameterGroupName=Ref(db_parameters)
             )
         )
+t.add_output(Output(
+    'JDBCConnectionString',
+    Description='JDBC connection string for database',
+    Value=Join('', [
+                'jdbc:postgresql://',
+                GetAtt(database, 'Endpoint.Address'),
+                ':',
+                GetAtt(database, 'Endpoint.Port'),
+                '/',
+                Ref(db_name)
+            ])
+        ))
 
 
 vpc = t.add_resource(
@@ -211,7 +244,7 @@ metadata = cloudformation.Metadata(
             }),
             commands={
                 '01-unzip-sonarqube': {
-                    'command': 'unzip ' + SONARQUBE_PATH
+                    'command': 'unzip ' + SONARQUBE_PATH + '/opt/sonarqube/'
                 }
             }
         )
@@ -234,18 +267,33 @@ instance.NetworkInterfaces = [
         Description='GUS Network Interface',
         DeviceIndex='0',
         SubnetId=Ref(subnet),
-        PrivateIpAddresses=[
-            ec2.PrivateIpAddressSpecification(
-                Primary=True,
-                PrivateIpAddress='192.168.97.30'
-            )
-        ],
         GroupSet=[
             Ref(security_group)
         ],
-        AssociatePublicIpAddress=True
+        AssociatePublicIpAddress=False
     )
 ]
+instance.UserData = Base64(Join('', [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n",
+                                "yum install -y aws-cfn-bootstrap\n",
+                                "/opt/aws/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource SonarQubeInstance ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]]
+                        )
+                    )
+
+instance.IamInstanceProfile = Ref(sonarqube_instance_profile)
 instance.Metadata = metadata
 
 t.add_resource(instance)
