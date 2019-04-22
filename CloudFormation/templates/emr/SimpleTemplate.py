@@ -148,9 +148,12 @@ cluster.Configurations = [
         Classification="emrfs-site",
         ConfigurationProperties={
             "fs.s3.consistent": "true",
-            "fs.s3.consistent.metadata.tableName": "EmrFSMetadata",
+            "fs.s3.consistent.metadata.tableName": "GusInstanceGroupEmrFSMetadata",
             "fs.s3.consistent.retryCount": "5",
-            "fs.s3.consistent.retryPeriodSeconds": "10"
+            "fs.s3.consistent.retryPeriodSeconds": "10",
+            "fs.s3.consistent.notification.CloudWatch": "true",
+            "fs.s3.consistent.notification.SQS": "true",
+            "fs.s3.consistent.notification.SQS.queueName": "GusInstanceGroupEmrFSMetadata"
         }
     )
 ]
