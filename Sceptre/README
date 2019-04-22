@@ -1,0 +1,1 @@
+sceptre --var "profile=aws-account" create dev/simple-emr.yaml
