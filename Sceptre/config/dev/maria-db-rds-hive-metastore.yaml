@@ -1,0 +1,12 @@
+project_code: "maria-db-rds-hive-metastore"
+profile: {{ var.profile }}
+region: "eu-west-1"
+
+template_path: maria-db-rds-hive-metastore.py
+
+parameters:
+    MasterUserPassword: "root"
+    DB2InstanceClass: "db.m5"
+    SubnetIds: ""
+    Vpc: ""
+    DB2InstanceIdentifier: "maria-db-rds-hive-metastore"
