@@ -1,1 +1,3 @@
 sceptre --var "profile=aws-account" create dev/simple-emr.yaml
+sceptre --var "profile=gumartinm" create dev/simple-security-group.yaml
+sceptre --output json --var "profile=big-scmspain-dev" generate dev/simple-security-group.yaml
