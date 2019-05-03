@@ -10,14 +10,14 @@ import troposphere.emr as emr
 class EMRInstanceGroup(object):
 
     def __init__(self, sceptre_user_data):
-        self.template = Template(Description='EMR Instance Group')
-        self.template.AWSTemplateFormatVersion = '2010-09-09'
+        self._template = Template(Description='EMR Instance Group')
+        self._template.AWSTemplateFormatVersion = '2010-09-09'
         self.sceptre_user_data = sceptre_user_data
-        self._add_arguments()
-        self._add_emr()
+        self.__add_arguments()
+        self.__add_emr()
 
-    def _add_arguments(self):
-        self.project = self.template.add_parameter(Parameter(
+    def __add_arguments(self):
+        self.project = self._template.add_parameter(Parameter(
             "Project",
             Type="String",
             Description="Project Name",
@@ -27,7 +27,7 @@ class EMRInstanceGroup(object):
             AllowedPattern="[\\x20-\\x7E]*",
             ConstraintDescription="can contain only ASCII characters.",
         ))
-        self.key_name = self.template.add_parameter(
+        self.__key_name = self._template.add_parameter(
             Parameter(
                 'KeyName',
                 Type='AWS::EC2::KeyPair::KeyName',
@@ -36,7 +36,7 @@ class EMRInstanceGroup(object):
                 Description='Name of an existing KeyPair to enable SSH'
             )
         )
-        self.additional_master_security_group = self.template.add_parameter(
+        self.__additional_master_security_group = self._template.add_parameter(
             Parameter(
                 'AdditionalMasterSecurityGroup',
                 Type='AWS::EC2::SecurityGroup::Id',
@@ -44,7 +44,7 @@ class EMRInstanceGroup(object):
                 Description='Id of an existing security group '
             )
         )
-        self.master_security_group = self.template.add_parameter(
+        self.__master_security_group = self._template.add_parameter(
             Parameter(
                 'MasterSecurityGroup',
                 Type='AWS::EC2::SecurityGroup::Id',
@@ -52,7 +52,7 @@ class EMRInstanceGroup(object):
                 Description='Id of an existing security group '
             )
         )
-        self.additional_slave_security_group = self.template.add_parameter(
+        self.__additional_slave_security_group = self._template.add_parameter(
             Parameter(
                 'AdditionalSlaveSecurityGroup',
                 Type='AWS::EC2::SecurityGroup::Id',
@@ -60,7 +60,7 @@ class EMRInstanceGroup(object):
                 Description='Id of an existing security group '
             )
         )
-        self.slave_security_group = self.template.add_parameter(
+        self.__slave_security_group = self._template.add_parameter(
             Parameter(
                 'SlaveSecurityGroup',
                 Type='AWS::EC2::SecurityGroup::Id',
@@ -68,7 +68,7 @@ class EMRInstanceGroup(object):
                 Description='Id of an existing security group '
             )
         )
-        self.ec2_subnet_id = self.template.add_parameter(
+        self.__ec2_subnet_id = self._template.add_parameter(
             Parameter(
                 'EC2SubnetId',
                 Type='AWS::EC2::Subnet::Id',
@@ -76,7 +76,7 @@ class EMRInstanceGroup(object):
                 Description='Id of an existing subnet '
             )
         )
-        self.ec2_instance_profile_role = self.template.add_parameter(
+        self.__ec2_instance_profile_role = self._template.add_parameter(
             Parameter(
                 'EC2InstanceProfileRole',
                 Type='String',
@@ -85,7 +85,7 @@ class EMRInstanceGroup(object):
                 Default='EMR_EC2_DefaultRole'
             )
         )
-        self.emr_role = self.template.add_parameter(
+        self.__emr_role = self._template.add_parameter(
             Parameter(
                 'EMRRole',
                 Type='String',
@@ -94,7 +94,7 @@ class EMRInstanceGroup(object):
                 Default='EMR_DefaultRole'
             )
         )
-        self.emr_autoscaling_role = self.template.add_parameter(
+        self.__emr_autoscaling_role = self._template.add_parameter(
             Parameter(
                 'EMRAutoScalingRole',
                 Type='String',
@@ -103,7 +103,7 @@ class EMRInstanceGroup(object):
                 Default='EMR_AutoScaling_DefaultRole'
             )
         )
-        self.release_label = self.template.add_parameter(
+        self.__release_label = self._template.add_parameter(
             Parameter(
                 'ReleaseLabel',
                 Type='String',
@@ -112,7 +112,7 @@ class EMRInstanceGroup(object):
                 Default='emr-5.23.0'
             )
         )
-        self.emr_log_uri = self.template.add_parameter(
+        self.__emr_log_uri = self._template.add_parameter(
             Parameter(
                 'EMRLogUri',
                 Type='String',
@@ -121,13 +121,13 @@ class EMRInstanceGroup(object):
             )
         )
 
-    def _add_emr(self):
+    def __add_emr(self):
         cluster = emr.Cluster('GusInstanceGroupCloudFormation')
         cluster.Name = 'GusInstanceGroupCloudFormation'
-        cluster.LogUri = Ref(self.emr_log_uri)
-        cluster.ReleaseLabel = Ref(self.release_label)
-        cluster.JobFlowRole = Ref(self.ec2_instance_profile_role)
-        cluster.ServiceRole = Ref(self.emr_role)
+        cluster.LogUri = Ref(self.__emr_log_uri)
+        cluster.ReleaseLabel = Ref(self.__release_label)
+        cluster.JobFlowRole = Ref(self.__ec2_instance_profile_role)
+        cluster.ServiceRole = Ref(self.__emr_role)
         cluster.VisibleToAllUsers = True
         cluster.Applications = [
             emr.Application(
@@ -160,20 +160,20 @@ class EMRInstanceGroup(object):
                 }
             )
         ]
-        cluster.AutoScalingRole = Ref(self.emr_autoscaling_role)
+        cluster.AutoScalingRole = Ref(self.__emr_autoscaling_role)
         cluster.ScaleDownBehavior = "TERMINATE_AT_TASK_COMPLETION"
         cluster.EbsRootVolumeSize = 10
         cluster.Instances = emr.JobFlowInstancesConfig(
             AdditionalMasterSecurityGroups=[
-                Ref(self.additional_master_security_group)
+                Ref(self.__additional_master_security_group)
             ],
             AdditionalSlaveSecurityGroups=[
-                Ref(self.additional_slave_security_group)
+                Ref(self.__additional_slave_security_group)
             ],
-            Ec2KeyName=Ref(self.key_name),
-            Ec2SubnetId=Ref(self.ec2_subnet_id),
-            EmrManagedMasterSecurityGroup=Ref(self.master_security_group),
-            EmrManagedSlaveSecurityGroup=Ref(self.slave_security_group),
+            Ec2KeyName=Ref(self.__key_name),
+            Ec2SubnetId=Ref(self.__ec2_subnet_id),
+            EmrManagedMasterSecurityGroup=Ref(self.__master_security_group),
+            EmrManagedSlaveSecurityGroup=Ref(self.__slave_security_group),
             KeepJobFlowAliveWhenNoSteps=True,
             TerminationProtected=False,
             MasterInstanceGroup=emr.InstanceGroupConfigProperty(
@@ -283,7 +283,7 @@ class EMRInstanceGroup(object):
                 )
             )
         )
-        self.template.add_resource(cluster)
+        self._template.add_resource(cluster)
 
         instance_group_config = emr.InstanceGroupConfig(
             'TaskInstanceGroup',
@@ -386,12 +386,12 @@ class EMRInstanceGroup(object):
                 ]
             )
         )
-        self.template.add_resource(instance_group_config)
+        self._template.add_resource(instance_group_config)
 
 
 def sceptre_handler(sceptre_user_data):
     emr_instance_group = EMRInstanceGroup(sceptre_user_data)
-    return emr_instance_group.template.to_json()
+    return emr_instance_group._template.to_json()
 
 
 if __name__ == '__main__':
