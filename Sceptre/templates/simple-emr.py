@@ -3,7 +3,7 @@
 #
 
 from troposphere import Parameter, Template, Ref
-from troposphere.constants import M3_XLARGE
+from troposphere.constants import M5_XLARGE
 import troposphere.emr as emr
 
 
@@ -123,7 +123,7 @@ class EMRInstanceGroup(object):
 
     def _add_emr(self):
         cluster = emr.Cluster('GusInstanceGroupCloudFormation')
-        cluster.Name = 'Gus InstanceGroup CloudFormation'
+        cluster.Name = 'GusInstanceGroupCloudFormation'
         cluster.LogUri = Ref(self.emr_log_uri)
         cluster.ReleaseLabel = Ref(self.release_label)
         cluster.JobFlowRole = Ref(self.ec2_instance_profile_role)
@@ -180,14 +180,14 @@ class EMRInstanceGroup(object):
                 "MasterInstanceGroup",
                 Name="Master Instance Group",
                 InstanceCount="1",
-                InstanceType=M3_XLARGE,
+                InstanceType=M5_XLARGE,
                 Market="SPOT"
             ),
             CoreInstanceGroup=emr.InstanceGroupConfigProperty(
                 "CoreInstanceGroup",
                 Name="Core Instance Group",
                 Market="SPOT",
-                InstanceType=M3_XLARGE,
+                InstanceType=M5_XLARGE,
                 InstanceCount=2,
                 AutoScalingPolicy=emr.AutoScalingPolicy(
                     Constraints=emr.ScalingConstraints(
@@ -290,7 +290,7 @@ class EMRInstanceGroup(object):
             Name="Task Instance Group",
             JobFlowId=Ref(cluster),
             InstanceCount=0,
-            InstanceType=M3_XLARGE,
+            InstanceType=M5_XLARGE,
             InstanceRole='TASK',
             Market='SPOT',
             AutoScalingPolicy=emr.AutoScalingPolicy(
