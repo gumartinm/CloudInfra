@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from iam.ip_address_management import IpAddressManagement
+from ipam.ip_address_management import IpAddressManagement
 
 
 class HomeOffice(IpAddressManagement):

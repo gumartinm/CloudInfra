@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # coding: utf-8
 #
-from iam.home_office import HomeOffice
-from iam.security_group_resource_builder import SecurityGroupResourceBuilder
-from troposphere import Template, Output, Export, Join, Ref, StackName, GetAtt
+from ipam.home_office import HomeOffice
+from ipam.security_group_resource_builder import SecurityGroupResourceBuilder
+from troposphere import Template, Output, Export, Join, Ref, StackName
 
 
 class SimpleSecurityGroup(object):
