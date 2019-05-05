@@ -1,12 +1,13 @@
 template_path: maria-db-rds-hive-metastore.py
 
 parameters:
+    MasterUserName: "root"
     MasterUserPassword: "rootpassword"
     DB2InstanceClass: "db.t2.micro"
     AllocatedStorage: "20"
     SubnetIds: "subnet-7dfb4a27,subnet-89397ec1,subnet-b591e5d3"
-    DB2InstanceIdentifier: "maria-db-rds"
+    DB2InstanceIdentifier: "hive-db"
     SecurityGroupId: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
 
 sceptre_user_data:
-    DatabaseName: "rootdatabase"
+    DatabaseName: "hive"

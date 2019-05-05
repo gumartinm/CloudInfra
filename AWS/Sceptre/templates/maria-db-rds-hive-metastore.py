@@ -150,7 +150,7 @@ class MariaDBRDSHiveMetastore(object):
     def __add_outputs(self):
         self._template.add_output(
             Output(
-                "RDSAddress",
+                "DatabaseAddress",
                 Value=GetAtt(self.__db_instance_name, "Endpoint.Address"),
                 Export=Export(Join("-", [StackName, "endpoint"]))
 
@@ -158,7 +158,7 @@ class MariaDBRDSHiveMetastore(object):
         )
         self._template.add_output(
             Output(
-                "RDSPort",
+                "DatabasePort",
                 Value=GetAtt(self.__db_instance_name, "Endpoint.Port"),
                 Export=Export(Join("-", [StackName, "port"]))
 

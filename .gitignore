@@ -4,3 +4,6 @@
 
 # Python's virtual environment
 virtual/
+
+# Python
+__pycache__/
