@@ -1,12 +1,12 @@
-project_code: "maria-db-rds-hive-metastore"
-profile: {{ var.profile }}
-region: "eu-west-1"
-
 template_path: maria-db-rds-hive-metastore.py
 
 parameters:
-    MasterUserPassword: "root"
-    DB2InstanceClass: "db.m5"
-    SubnetIds: ""
-    Vpc: ""
-    DB2InstanceIdentifier: "maria-db-rds-hive-metastore"
+    MasterUserPassword: "rootpassword"
+    DB2InstanceClass: "db.t2.micro"
+    AllocatedStorage: "20"
+    SubnetIds: "subnet-7dfb4a27,subnet-89397ec1,subnet-b591e5d3"
+    DB2InstanceIdentifier: "maria-db-rds"
+    SecurityGroupId: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
+
+sceptre_user_data:
+    DatabaseName: "rootdatabase"

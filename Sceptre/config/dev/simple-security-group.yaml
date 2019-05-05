@@ -1,11 +1,7 @@
-project_code: "allgemein"
-profile: {{ var.profile }}
-region: "eu-west-1"
-
 template_path: simple-security-group.py
 
 sceptre_user_data:
     VpcId: "vpc-2986bd4f"
     SecurityGroupDescription: "Some Simple Security Group Description"
-    SecurityGroupName: "SomeSecurityGroupName"
+    SecurityGroupName: "SimpleSecurityGroup"
     PostgreSQLPort: 5432

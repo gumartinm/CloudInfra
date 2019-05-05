@@ -4,7 +4,6 @@
 
 from troposphere import Parameter, Template, Ref, Output, Export, Join, StackName, GetAtt
 import troposphere.rds as rds
-import troposphere.ec2 as ec2
 
 
 class MariaDBRDSHiveMetastore(object):
@@ -29,14 +28,6 @@ class MariaDBRDSHiveMetastore(object):
             AllowedPattern="[\\x20-\\x7E]*",
             ConstraintDescription="can contain only ASCII characters.",
         ))
-        self.__vpc = self._template.add_parameter(
-            Parameter(
-                'Vpc',
-                Type='AWS::EC2::VPC::Id',
-                ConstraintDescription='must be the id of an existing vpc.',
-                Description='Id of an existing vpc '
-            )
-        )
         self.__master_user_password = self._template.add_parameter(
             Parameter(
                 'MasterUserPassword',
@@ -61,6 +52,14 @@ class MariaDBRDSHiveMetastore(object):
                 Type='List<AWS::EC2::Subnet::Id>',
                 ConstraintDescription='must be the ids of existing subnets.',
                 Description='Ids of existing subnets '
+            )
+        )
+        self.__security_group_id = self._template.add_parameter(
+            Parameter(
+                'SecurityGroupId',
+                Type='AWS::EC2::SecurityGroup::Id',
+                ConstraintDescription='must be the ids of existing security group.',
+                Description='Ids of existing security group '
             )
         )
         self.__db_instance_class = self._template.add_parameter(
@@ -98,24 +97,6 @@ class MariaDBRDSHiveMetastore(object):
             )
         )
 
-    # Create cloudformation for security groups, export its outputs and use them here.
-    # This security group can be used by RDS, EC2, etc, etc.
-    def __add_database_security_group(self):
-        security_group_ingress = ec2.SecurityGroupRule(
-            'MariaDBRDSSecurityGroupIngress',
-            IpProtocol='tcp',
-            FromPort=5432,
-            ToPort=5432,
-            CidrIp='192.168.1.0/24'
-        )
-        return ec2.SecurityGroup(
-            'MariaDBRDSSecurityGroup',
-            GroupDescription='Access to RDS',
-            SecurityGroupIngress=[
-                security_group_ingress],
-            VpcId=Ref(self.__vpc)
-        )
-
     # Should I share this subnet group with more data bases? Should it be located in its own cloudformation?
     # This stuff can only be reused by other data bases :(
     def __add_database_subnet_group(self):
@@ -126,7 +107,7 @@ class MariaDBRDSHiveMetastore(object):
         )
 
     # Should I share this parameter group with more data bases? Should it be located in its own cloudformation?
-    # This stuff can only be reused other data bases :(
+    # This stuff can only be reused by other data bases :(
     def __add_parameter_group(self):
         return rds.DBParameterGroup(
             'MariaDBRDSParameterGroup',
@@ -145,14 +126,13 @@ class MariaDBRDSHiveMetastore(object):
         database_subnet_group = self.__add_database_subnet_group()
         self._template.add_resource(database_subnet_group)
 
-        database_security_group = self.__add_database_security_group()
-        self._template.add_resource(database_security_group)
+        database_name = self.sceptre_user_data.get('DatabaseName')
 
         db_instance = rds.DBInstance(self.__db_instance_name)
         db_instance.AllocatedStorage = Ref(self.__allocated_storage)
         db_instance.AllowMajorVersionUpgrade = False
         db_instance.AutoMinorVersionUpgrade = True
-        db_instance.DBName = "rootdatabase"
+        db_instance.DBName = database_name
         db_instance.DBParameterGroupName = Ref(database_parameter_group)
         db_instance.DBSubnetGroupName = Ref(database_subnet_group)
         db_instance.DBInstanceClass = Ref(self.__db_instance_class)
@@ -164,7 +144,7 @@ class MariaDBRDSHiveMetastore(object):
         db_instance.MultiAZ = False
         db_instance.PubliclyAccessible = False
         db_instance.StorageType = "gp2"
-        db_instance.VPCSecurityGroups = Ref(database_security_group)
+        db_instance.VPCSecurityGroups = [Ref(self.__security_group_id)]
         self._template.add_resource(db_instance)
 
     def __add_outputs(self):
