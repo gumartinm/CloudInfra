@@ -2,4 +2,4 @@ awacs==0.9.0
 boto==2.49.0
 boto3==1.9.134
 troposphere==2.4.6
-sceptre==2.1.0
+sceptre==2.1.1
