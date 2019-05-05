@@ -2,7 +2,7 @@
 # coding: utf-8
 #
 
-from troposphere import Parameter, Template, Ref, Join
+from troposphere import Parameter, Template, Ref, Join, Output, GetAtt, Export, StackName
 from troposphere.constants import M5_XLARGE
 import troposphere.emr as emr
 
@@ -15,6 +15,7 @@ class HiveEMRInstanceGroup(object):
         self.sceptre_user_data = sceptre_user_data
         self.__add_arguments()
         self.__add_emr()
+        self.__add_outputs()
 
     def __add_arguments(self):
         self.project = self._template.add_parameter(Parameter(
@@ -210,6 +211,15 @@ class HiveEMRInstanceGroup(object):
         )
         self._template.add_resource(cluster)
 
+    def __add_outputs(self):
+        self._template.add_output(
+            Output(
+                "HiveEMRAddress",
+                Value=GetAtt("HiveEMR", "MasterPublicDNS"),
+                Export=Export(Join("-", [StackName, "address"]))
+
+            )
+        )
 
 def sceptre_handler(sceptre_user_data):
     emr_instance_group = HiveEMRInstanceGroup(sceptre_user_data)
