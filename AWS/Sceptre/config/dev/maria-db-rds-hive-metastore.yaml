@@ -6,7 +6,7 @@ parameters:
     DB2InstanceClass: "db.t2.micro"
     AllocatedStorage: "20"
     SubnetIds: "subnet-7dfb4a27,subnet-89397ec1,subnet-b591e5d3"
-    DB2InstanceIdentifier: "hive-db"
+    DB2InstanceIdentifier: "hive-mariadb"
     SecurityGroupId: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
 
 sceptre_user_data:
