@@ -1,0 +1,6 @@
+# Pycharm
+.idea
+*.iml
+
+# Python's virtual environment
+virtual/
