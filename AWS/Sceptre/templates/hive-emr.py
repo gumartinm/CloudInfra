@@ -3,7 +3,7 @@
 #
 
 from troposphere import Parameter, Template, Ref, Join, Output, GetAtt, Export, StackName
-from troposphere.constants import M5_XLARGE
+from troposphere.constants import M5_2XLARGE
 import troposphere.emr as emr
 
 
@@ -156,6 +156,29 @@ class HiveEMRInstanceGroup(object):
         )
 
     def __add_emr(self):
+        hive_external_metastore_conf = emr.Configuration()
+        hive_external_metastore_conf.Classification = "hive-site"
+        hive_external_metastore_conf.ConfigurationProperties = {
+            "javax.jdo.option.ConnectionURL": Join("", ["jdbc:mysql://",
+                                                        Ref(self.__database_address), ":",
+                                                        Ref(self.__database_port),
+                                                        "/hive?createDatabaseIfNotExist=true"]),
+            "javax.jdo.option.ConnectionDriverName": "org.mariadb.jdbc.Driver",
+            "javax.jdo.option.ConnectionUserName": Ref(self.__database_user_name),
+            "javax.jdo.option.ConnectionPassword": Ref(self.__database_password)
+        }
+
+        hive_env_configuration = emr.Configuration()
+        hive_env_configuration.Classification = "hive-env"
+        hive_env_configuration.Configurations = [
+            emr.Configuration(
+                Classification="export",
+                ConfigurationProperties={
+                    "HADOOP_HEAPSIZE": "10240"
+                }
+            )
+        ]
+
         cluster = emr.Cluster('HiveEMR')
         cluster.Name = 'HiveEMR'
         cluster.LogUri = Ref(self.__emr_log_uri)
@@ -172,18 +195,8 @@ class HiveEMRInstanceGroup(object):
             )
         ]
         cluster.Configurations = [
-            emr.Configuration(
-                Classification="hive-site",
-                ConfigurationProperties={
-                    "javax.jdo.option.ConnectionURL": Join("", ["jdbc:mysql://",
-                                                                Ref(self.__database_address), ":",
-                                                                Ref(self.__database_port),
-                                                                "/hive?createDatabaseIfNotExist=true"]),
-                    "javax.jdo.option.ConnectionDriverName": "org.mariadb.jdbc.Driver",
-                    "javax.jdo.option.ConnectionUserName": Ref(self.__database_user_name),
-                    "javax.jdo.option.ConnectionPassword": Ref(self.__database_password)
-                }
-            )
+            hive_external_metastore_conf,
+            hive_env_configuration
         ]
         cluster.AutoScalingRole = Ref(self.__emr_autoscaling_role)
         cluster.ScaleDownBehavior = "TERMINATE_AT_TASK_COMPLETION"
@@ -205,7 +218,7 @@ class HiveEMRInstanceGroup(object):
                 "MasterInstanceGroup",
                 Name="Master Instance Group",
                 InstanceCount="1",
-                InstanceType=M5_XLARGE,
+                InstanceType=M5_2XLARGE,
                 Market="ON_DEMAND"
             )
         )
