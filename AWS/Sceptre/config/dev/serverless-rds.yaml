@@ -1,0 +1,11 @@
+template_path: serverless-rds.py
+
+parameters:
+    MasterUserName: "root"
+    MasterUserPassword: "rootpassword"
+    SubnetIds: "subnet-7dfb4a27,subnet-89397ec1,subnet-b591e5d3"
+    DBClusterIdentifier: "aurora-serverless"
+    SecurityGroupId: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
+
+sceptre_user_data:
+    DatabaseName: "auroraserverless"
