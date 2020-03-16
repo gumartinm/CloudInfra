@@ -1,0 +1,16 @@
+template_path: hbase-emr.py
+
+parameters:
+    KeyName: "gumartinm"
+    EMRRole: "EMR_DefaultRole"
+    EMRAutoScalingRole: "EMR_AutoScaling_DefaultRole"
+    EC2InstanceProfileRole: "EMR_EC2_DefaultRole"
+    ReleaseLabel: "emr-6.0.0"
+    EC2SubnetId: "subnet-7dfb4a27"
+    EMRLogUri: "s3n://gumartinm-emr-logs/hive/"
+    EC2InstanceType: 'm5.large'
+
+    AdditionalMasterSecurityGroup: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
+    MasterSecurityGroup: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
+    AdditionalSlaveSecurityGroup: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
+    SlaveSecurityGroup: !stack_output dev/simple-security-group.yaml::SimpleSecurityGroup
